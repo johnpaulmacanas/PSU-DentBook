@@ -1,12 +1,7 @@
-import type { ReactNode } from 'react'
-import { NavLink } from 'react-router-dom'
-import './Layout.css'
+import { NavLink, Outlet } from 'react-router-dom'
+import '../shared/Layout.css'
 
-interface LayoutProps {
-  children: ReactNode
-}
-
-export function Layout({ children }: LayoutProps) {
+export function Layout() {
   return (
     <div className="layout-root">
       <aside className="layout-sidebar">
@@ -34,7 +29,9 @@ export function Layout({ children }: LayoutProps) {
           <div className="layout-header-title">Clinical Workflow Automation</div>
           <div className="layout-header-meta">DentaStream</div>
         </header>
-        <main className="layout-content">{children}</main>
+        <main className="layout-content">
+          <Outlet />
+        </main>
       </div>
     </div>
   )
