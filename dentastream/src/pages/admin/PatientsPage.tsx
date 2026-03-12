@@ -1,4 +1,4 @@
-import './Page.css'
+import '../shared/Page.css'
 
 export function PatientsPage() {
   return (
