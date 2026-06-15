@@ -3,6 +3,7 @@ import { Layout } from './layouts/admin/Layout'
 import { PatientLayout } from './layouts/patient/PatientLayout'
 import { DoctorLayout } from './layouts/doctor/DoctorLayout'
 import { LoginPage } from './pages/shared/LoginPage'
+import { WelcomePage } from './pages/shared/WelcomePage'
 import { DashboardPage } from './pages/admin/DashboardPage'
 import { AppointmentsPage } from './pages/admin/AppointmentsPage'
 import { PatientsPage } from './pages/admin/PatientsPage'
@@ -24,6 +25,7 @@ function App() {
   if (!isAuthenticated) {
     return (
       <Routes>
+        <Route path="/" element={<WelcomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
@@ -32,13 +34,15 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/" element={<WelcomePage />} />
+
       {/* Admin UI (existing) */}
       <Route element={<Layout />}>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/appointments" element={<AppointmentsPage />} />
-        <Route path="/patients" element={<PatientsPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/admin" element={<DashboardPage />} />
+        <Route path="/admin/appointments" element={<AppointmentsPage />} />
+        <Route path="/admin/patients" element={<PatientsPage />} />
+        <Route path="/admin/chat" element={<ChatPage />} />
+        <Route path="/admin/settings" element={<SettingsPage />} />
       </Route>
 
       {/* Patient UI */}

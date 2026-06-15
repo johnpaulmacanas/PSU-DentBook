@@ -7,19 +7,19 @@ export function Layout() {
       <aside className="layout-sidebar">
         <div className="layout-brand">DentaStream</div>
         <nav className="layout-nav">
-          <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+          <NavLink to="/admin" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             Dashboard
           </NavLink>
-          <NavLink to="/appointments" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+          <NavLink to="/admin/appointments" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             Appointments
           </NavLink>
-          <NavLink to="/patients" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+          <NavLink to="/admin/patients" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             Patients
           </NavLink>
-          <NavLink to="/chat" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+          <NavLink to="/admin/chat" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             Chat
           </NavLink>
-          <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+          <NavLink to="/admin/settings" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             Settings
           </NavLink>
         </nav>
