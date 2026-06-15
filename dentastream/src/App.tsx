@@ -1,65 +1,90 @@
 import { Route, Routes, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+
+// Layouts
 import { Layout } from './layouts/admin/Layout'
 import { PatientLayout } from './layouts/patient/PatientLayout'
 import { DoctorLayout } from './layouts/doctor/DoctorLayout'
-import { LoginPage } from './pages/shared/LoginPage'
+
+// Pages — Admin
 import { DashboardPage } from './pages/admin/DashboardPage'
 import { AppointmentsPage } from './pages/admin/AppointmentsPage'
+import { RequestsPage } from './pages/admin/RequestsPage'
 import { PatientsPage } from './pages/admin/PatientsPage'
 import { ChatPage } from './pages/admin/ChatPage'
 import { SettingsPage } from './pages/shared/SettingsPage'
+
+// Pages — Patient
 import { PatientDashboardPage } from './pages/patient/PatientDashboardPage'
-import { DoctorDashboardPage } from './pages/doctor/DoctorDashboardPage'
 import { PatientAppointmentsPage } from './pages/patient/PatientAppointmentsPage'
+import { PatientRequestPage } from './pages/patient/PatientRequestPage'
+import { PatientBillingPage } from './pages/patient/PatientBillingPage'
 import { PatientProfilePage } from './pages/patient/PatientProfilePage'
 import { PatientChatPage } from './pages/patient/PatientChatPage'
+
+// Pages — Doctor
+import { DoctorDashboardPage } from './pages/doctor/DoctorDashboardPage'
 import { DoctorAppointmentsPage } from './pages/doctor/DoctorAppointmentsPage'
 import { DoctorPatientsPage } from './pages/doctor/DoctorPatientsPage'
 import { DoctorChatPage } from './pages/doctor/DoctorChatPage'
 
-function App() {
-  // TODO: replace with real auth/role logic
-  const isAuthenticated = true
+// Pages — Shared / auth
+import { LoginPage } from './pages/shared/LoginPage'
+import { SignUpPage } from './pages/shared/SignUpPage'
 
-  if (!isAuthenticated) {
-    return (
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    )
-  }
+function AppRoutes() {
+  const { role, loading } = useAuth()
+
+  if (loading) return null
+
+  // Redirect from unknown routes based on role
+  const roleHome = role === 'doctor' ? '/doctor'
+    : role === 'patient' ? '/patient'
+    : '/'
 
   return (
     <Routes>
-      {/* Admin UI (existing) */}
-      <Route element={<Layout />}>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+
+      {/* Admin */}
+      <Route element={<ProtectedRoute allowedRoles={['admin']}><Layout /></ProtectedRoute>}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
+        <Route path="/requests" element={<RequestsPage />} />
         <Route path="/patients" element={<PatientsPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 
-      {/* Patient UI */}
-      <Route element={<PatientLayout />}>
+      {/* Patient */}
+      <Route element={<ProtectedRoute allowedRoles={['patient']}><PatientLayout /></ProtectedRoute>}>
         <Route path="/patient" element={<PatientDashboardPage />} />
         <Route path="/patient/appointments" element={<PatientAppointmentsPage />} />
+        <Route path="/patient/request" element={<PatientRequestPage />} />
+        <Route path="/patient/billing" element={<PatientBillingPage />} />
         <Route path="/patient/profile" element={<PatientProfilePage />} />
         <Route path="/patient/chat" element={<PatientChatPage />} />
       </Route>
 
-      {/* Doctor UI */}
-      <Route element={<DoctorLayout />}>
+      {/* Doctor */}
+      <Route element={<ProtectedRoute allowedRoles={['doctor']}><DoctorLayout /></ProtectedRoute>}>
         <Route path="/doctor" element={<DoctorDashboardPage />} />
         <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
         <Route path="/doctor/patients" element={<DoctorPatientsPage />} />
         <Route path="/doctor/chat" element={<DoctorChatPage />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to={roleHome} replace />} />
     </Routes>
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  )
+}
