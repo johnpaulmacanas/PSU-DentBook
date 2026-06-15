@@ -1,160 +1,203 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react';
+import { usePatients } from '../../hooks/usePatients';
+import { PatientService } from '../../services/PatientService';
+import { Field, controlClass } from '../../components/ui/Field';
+import type { Patient } from '../../types';
 
-const PATIENTS = [
-  { id: 'P-001', name: 'Maria Santos', age: 34, gender: 'F', contact: '09171234567', lastVisit: 'Mar 12, 2026', doctor: 'Dr. Reyes', status: 'Active' },
-  { id: 'P-002', name: 'Juan dela Cruz', age: 27, gender: 'M', contact: '09281234567', lastVisit: 'Mar 12, 2026', doctor: 'Dr. Lim', status: 'Active' },
-  { id: 'P-003', name: 'Ana Gomez', age: 19, gender: 'F', contact: '09351234567', lastVisit: 'Feb 28, 2026', doctor: 'Dr. Reyes', status: 'Active' },
-  { id: 'P-004', name: 'Ben Torres', age: 45, gender: 'M', contact: '09161234567', lastVisit: 'Mar 10, 2026', doctor: 'Dr. Tan', status: 'Active' },
-  { id: 'P-005', name: 'Carla Ramos', age: 29, gender: 'F', contact: '09491234567', lastVisit: 'Jan 15, 2026', doctor: 'Dr. Lim', status: 'Inactive' },
-  { id: 'P-006', name: 'Diego Bautista', age: 52, gender: 'M', contact: '09221234567', lastVisit: 'Mar 14, 2026', doctor: 'Dr. Reyes', status: 'Active' },
-  { id: 'P-007', name: 'Elena Cruz', age: 38, gender: 'F', contact: '09111234567', lastVisit: 'Mar 10, 2026', doctor: 'Dr. Tan', status: 'Inactive' },
-]
-
+/** Admin patient directory, wired to live data via PatientService. */
 export function PatientsPage() {
-  const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<typeof PATIENTS[0] | null>(null)
+  const { patients, loading, error, reload } = usePatients();
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Patient | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ age: '', gender: '', medical_notes: '' });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const filtered = PATIENTS.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.id.toLowerCase().includes(search.toLowerCase())
-  )
+  // Sync the edit form whenever the selected patient changes.
+  useEffect(() => {
+    setEditing(false);
+    setSaveError(null);
+    setForm({
+      age: selected?.age != null ? String(selected.age) : '',
+      gender: selected?.gender ?? '',
+      medical_notes: selected?.medical_notes ?? '',
+    });
+  }, [selected]);
+
+  async function savePatient() {
+    if (!selected) return;
+    setSaving(true);
+    setSaveError(null);
+    const { data, error } = await PatientService.update(selected.id, {
+      age: form.age ? Number(form.age) : null,
+      gender: (form.gender as 'M' | 'F' | 'other') || null,
+      medical_notes: form.medical_notes || null,
+    });
+    setSaving(false);
+    if (error) { setSaveError(error); return; }
+    if (data) setSelected(data);
+    setEditing(false);
+    await reload();
+  }
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return patients;
+    return patients.filter(p =>
+      (p.profile?.full_name ?? '').toLowerCase().includes(q) ||
+      p.patient_code.toLowerCase().includes(q)
+    );
+  }, [patients, search]);
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Heading */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-dark">Patients</h1>
-          <p className="mt-1 text-sm text-dark-5">Search and manage patient records and visit history.</p>
+          <p className="mt-1 text-sm text-dark-5">Search and manage patient records.</p>
         </div>
-        <button className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 transition-colors">
-          + Add Patient
-        </button>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        {/* Patient list */}
-        <div className="xl:col-span-2 rounded-xl border border-stroke bg-white shadow-sm">
-          {/* Search */}
+        {/* List */}
+        <div className="rounded-xl border border-stroke bg-white shadow-sm xl:col-span-2">
           <div className="border-b border-stroke p-4">
-            <div className="relative">
-              <input
-                type="search"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search by name or patient ID..."
-                className="w-full rounded-lg border border-stroke bg-gray-1 py-2.5 pl-10 pr-4 text-sm outline-none transition-colors focus:border-primary"
-              />
-              <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-dark-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </div>
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name or patient code…"
+              className="w-full rounded-lg border border-stroke bg-gray-1 px-3.5 py-2.5 text-sm outline-none focus:border-primary"
+            />
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stroke bg-gray-1 text-left text-xs font-semibold uppercase text-dark-5">
-                  <th className="px-5 py-3">Patient</th>
-                  <th className="px-5 py-3 hidden sm:table-cell">ID</th>
-                  <th className="px-5 py-3 hidden md:table-cell">Last Visit</th>
-                  <th className="px-5 py-3 hidden lg:table-cell">Doctor</th>
-                  <th className="px-5 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stroke">
-                {filtered.map(p => (
-                  <tr
-                    key={p.id}
-                    onClick={() => setSelected(p)}
-                    className={[
-                      'cursor-pointer transition-colors hover:bg-gray-1',
-                      selected?.id === p.id ? 'bg-primary/5' : '',
-                    ].join(' ')}
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                          {p.name[0]}
-                        </div>
-                        <div>
-                          <p className="font-medium text-dark">{p.name}</p>
-                          <p className="text-xs text-dark-5">{p.age}y · {p.gender === 'M' ? 'Male' : 'Female'}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-dark-5 hidden sm:table-cell">{p.id}</td>
-                    <td className="px-5 py-3.5 text-dark-5 hidden md:table-cell">{p.lastVisit}</td>
-                    <td className="px-5 py-3.5 text-dark-5 hidden lg:table-cell">{p.doctor}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={[
-                        'rounded-full px-2.5 py-1 text-xs font-medium',
-                        p.status === 'Active' ? 'bg-green-light/20 text-green' : 'bg-gray-2 text-dark-5',
-                      ].join(' ')}>
-                        {p.status}
-                      </span>
-                    </td>
+          {loading ? (
+            <p className="py-10 text-center text-sm text-dark-5">Loading…</p>
+          ) : error ? (
+            <p className="py-10 text-center text-sm text-red-500">{error}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stroke bg-gray-1 text-left text-xs font-semibold uppercase text-dark-5">
+                    <th className="px-5 py-3">Patient</th>
+                    <th className="px-5 py-3 hidden sm:table-cell">Code</th>
+                    <th className="px-5 py-3 hidden md:table-cell">Contact</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <p className="py-10 text-center text-sm text-dark-5">No patients found.</p>
-            )}
-          </div>
+                </thead>
+                <tbody className="divide-y divide-stroke">
+                  {filtered.map(p => (
+                    <tr
+                      key={p.id}
+                      onClick={() => setSelected(p)}
+                      className={[
+                        'cursor-pointer transition-colors hover:bg-gray-1',
+                        selected?.id === p.id ? 'bg-primary/5' : '',
+                      ].join(' ')}
+                    >
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                            {(p.profile?.full_name ?? '?')[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-dark">{p.profile?.full_name ?? 'Unknown'}</p>
+                            <p className="text-xs text-dark-5">
+                              {p.age ? `${p.age}y` : '—'}{p.gender ? ` · ${p.gender}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-dark-5 hidden sm:table-cell">{p.patient_code}</td>
+                      <td className="px-5 py-3.5 text-dark-5 hidden md:table-cell">{p.profile?.contact ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filtered.length === 0 && (
+                <p className="py-10 text-center text-sm text-dark-5">No patients found.</p>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Patient detail */}
+        {/* Detail */}
         <div className="rounded-xl border border-stroke bg-white shadow-sm">
           {selected ? (
             <div className="p-5">
-              <div className="flex items-center gap-4 pb-5 border-b border-stroke">
+              <div className="flex items-center gap-4 border-b border-stroke pb-5">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
-                  {selected.name[0]}
+                  {(selected.profile?.full_name ?? '?')[0]?.toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-dark">{selected.name}</h3>
-                  <p className="text-sm text-dark-5">{selected.id}</p>
+                <div className="min-w-0">
+                  <h3 className="truncate font-semibold text-dark">{selected.profile?.full_name ?? 'Unknown'}</h3>
+                  <p className="text-sm text-dark-5">{selected.patient_code}</p>
                 </div>
               </div>
-              <dl className="mt-4 space-y-3 text-sm">
-                {[
-                  { label: 'Age', value: `${selected.age} years old` },
-                  { label: 'Gender', value: selected.gender === 'F' ? 'Female' : 'Male' },
-                  { label: 'Contact', value: selected.contact },
-                  { label: 'Doctor', value: selected.doctor },
-                  { label: 'Last Visit', value: selected.lastVisit },
-                  { label: 'Status', value: selected.status },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <dt className="text-dark-5">{label}</dt>
-                    <dd className="font-medium text-dark">{value}</dd>
+
+              {editing ? (
+                <div className="mt-4 space-y-4">
+                  <Field label="Age">
+                    <input type="number" min="0" className={controlClass} value={form.age}
+                      onChange={e => setForm(f => ({ ...f, age: e.target.value }))} />
+                  </Field>
+                  <Field label="Gender">
+                    <select className={controlClass} value={form.gender}
+                      onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}>
+                      <option value="">—</option>
+                      <option value="M">Male</option>
+                      <option value="F">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </Field>
+                  <Field label="Medical notes">
+                    <textarea rows={3} className={controlClass} value={form.medical_notes}
+                      onChange={e => setForm(f => ({ ...f, medical_notes: e.target.value }))} />
+                  </Field>
+                  {saveError && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{saveError}</p>}
+                  <div className="flex justify-end gap-2">
+                    <button type="button" onClick={() => setEditing(false)}
+                      className="rounded-lg border border-stroke px-3 py-2 text-sm font-medium text-dark hover:bg-gray-1">
+                      Cancel
+                    </button>
+                    <button type="button" onClick={() => void savePatient()} disabled={saving}
+                      className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
+                      {saving ? 'Saving…' : 'Save'}
+                    </button>
                   </div>
-                ))}
-              </dl>
-              <div className="mt-6 flex gap-2">
-                <button className="flex-1 rounded-lg border border-stroke py-2 text-sm font-medium text-dark hover:bg-gray-1 transition-colors">
-                  View Records
-                </button>
-                <button className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors">
-                  Book Visit
-                </button>
-              </div>
+                </div>
+              ) : (
+                <>
+                  <dl className="mt-4 space-y-3 text-sm">
+                    {[
+                      { label: 'Age', value: selected.age ? `${selected.age} years old` : '—' },
+                      { label: 'Gender', value: selected.gender ?? '—' },
+                      { label: 'Contact', value: selected.profile?.contact ?? '—' },
+                      { label: 'Address', value: selected.profile?.address ?? '—' },
+                      { label: 'Medical notes', value: selected.medical_notes ?? '—' },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex items-start justify-between gap-4">
+                        <dt className="text-dark-5">{label}</dt>
+                        <dd className="text-right font-medium text-dark">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <button type="button" onClick={() => setEditing(true)}
+                    className="mt-5 w-full rounded-lg border border-stroke py-2 text-sm font-medium text-dark hover:bg-gray-1">
+                    Edit clinical data
+                  </button>
+                </>
+              )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 px-5 text-center">
-              <div className="rounded-full bg-gray-2 p-4 text-dark-5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-              <p className="mt-3 text-sm font-medium text-dark">No patient selected</p>
-              <p className="mt-1 text-xs text-dark-5">Click a row to view patient details.</p>
+            <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
+              <p className="text-sm font-medium text-dark">No patient selected</p>
+              <p className="mt-1 text-xs text-dark-5">Click a row to view details.</p>
             </div>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }

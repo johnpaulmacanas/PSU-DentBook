@@ -16,7 +16,7 @@ export class ChatService {
 
       if (error) return { data: null, error: error.message };
       const channels = (data ?? [])
-        .map((row) => (row as { channel: ChatChannel | null }).channel)
+        .map((row) => (row as unknown as { channel: ChatChannel | null }).channel)
         .filter((c): c is ChatChannel => Boolean(c));
       return { data: channels, error: null };
     } catch (err) {

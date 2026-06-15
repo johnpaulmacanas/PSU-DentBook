@@ -1,13 +1,25 @@
 export type UserRole = 'admin' | 'doctor' | 'patient';
 
 export type AppointmentStatus =
-  | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+  | 'pending' | 'scheduled' | 'rescheduled' | 'cancelled' | 'missed' | 'completed';
+
+export type RequestStatus = 'pending' | 'approved' | 'declined';
+
+export type Concern =
+  | 'checkup' | 'tooth_pain' | 'broken_tooth' | 'gum_problem' | 'whitening'
+  | 'braces' | 'tooth_removal' | 'child_visit' | 'follow_up' | 'not_sure';
+
+export type InvoiceKind = 'initial' | 'final';
+export type InvoiceStatus = 'unpaid' | 'paid';
 
 export interface Profile {
   id: string;
   role: UserRole;
   full_name: string;
   contact: string | null;
+  address: string | null;
+  birthdate: string | null;
+  sex: 'M' | 'F' | 'other' | null;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +72,58 @@ export interface ChatMessage {
   is_deleted: boolean;
   created_at: string;
   sender?: Profile;
+}
+
+export interface AppointmentRequest {
+  id: string;
+  patient_profile_id: string;
+  preferred_doctor_id: string | null;
+  concern: Concern;
+  notes: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_relation: string | null;
+  emergency_contact_number: string | null;
+  allergies: string | null;
+  medications: string | null;
+  conditions: string | null;
+  is_pregnant: boolean;
+  consent: boolean;
+  estimated_amount: number;
+  request_status: RequestStatus;
+  created_at: string;
+  // Optional embeds (when selected with joins)
+  patient_profile?: Profile;
+  preferred_doctor?: Doctor;
+}
+
+export interface Invoice {
+  id: string;
+  appointment_id: string;
+  kind: InvoiceKind;
+  amount: number;
+  status: InvoiceStatus;
+  created_at: string;
+  appointment?: Appointment;
+}
+
+export interface Receipt {
+  id: string;
+  invoice_id: string;
+  receipt_no: string;
+  issued_at: string;
+  invoice?: Invoice;
+}
+
+export interface MedicalCertificate {
+  id: string;
+  appointment_id: string;
+  diagnosis: string | null;
+  recommendation: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  issued_by: string | null;
+  issued_at: string;
+  appointment?: Appointment;
 }
 
 export interface ServiceResult<T> {

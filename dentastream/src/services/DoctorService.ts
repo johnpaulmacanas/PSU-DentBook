@@ -39,6 +39,22 @@ export class DoctorService {
     }
   }
 
+  /** Find a doctor row by its owning profile id. data is null if none exists. */
+  static async getByProfileId(profileId: string): Promise<ServiceResult<Doctor | null>> {
+    try {
+      const { data, error } = await supabase
+        .from('doctors')
+        .select(DoctorService.BASE_SELECT)
+        .eq('profile_id', profileId)
+        .maybeSingle();
+
+      if (error) return { data: null, error: error.message };
+      return { data: (data as unknown as Doctor | null) ?? null, error: null };
+    } catch (err) {
+      return handleSupabaseError(err);
+    }
+  }
+
   static async create(payload: CreateDoctorPayload): Promise<ServiceResult<Doctor>> {
     try {
       const { data, error } = await supabase

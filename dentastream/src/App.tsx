@@ -10,6 +10,7 @@ import { DoctorLayout } from './layouts/doctor/DoctorLayout'
 // Pages — Admin
 import { DashboardPage } from './pages/admin/DashboardPage'
 import { AppointmentsPage } from './pages/admin/AppointmentsPage'
+import { RequestsPage } from './pages/admin/RequestsPage'
 import { PatientsPage } from './pages/admin/PatientsPage'
 import { ChatPage } from './pages/admin/ChatPage'
 import { SettingsPage } from './pages/shared/SettingsPage'
@@ -17,6 +18,8 @@ import { SettingsPage } from './pages/shared/SettingsPage'
 // Pages — Patient
 import { PatientDashboardPage } from './pages/patient/PatientDashboardPage'
 import { PatientAppointmentsPage } from './pages/patient/PatientAppointmentsPage'
+import { PatientRequestPage } from './pages/patient/PatientRequestPage'
+import { PatientBillingPage } from './pages/patient/PatientBillingPage'
 import { PatientProfilePage } from './pages/patient/PatientProfilePage'
 import { PatientChatPage } from './pages/patient/PatientChatPage'
 
@@ -49,6 +52,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['admin']}><Layout /></ProtectedRoute>}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
+        <Route path="/requests" element={<RequestsPage />} />
         <Route path="/patients" element={<PatientsPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/settings" element={<SettingsPage />} />
@@ -58,6 +62,8 @@ function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['patient']}><PatientLayout /></ProtectedRoute>}>
         <Route path="/patient" element={<PatientDashboardPage />} />
         <Route path="/patient/appointments" element={<PatientAppointmentsPage />} />
+        <Route path="/patient/request" element={<PatientRequestPage />} />
+        <Route path="/patient/billing" element={<PatientBillingPage />} />
         <Route path="/patient/profile" element={<PatientProfilePage />} />
         <Route path="/patient/chat" element={<PatientChatPage />} />
       </Route>
