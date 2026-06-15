@@ -3,7 +3,7 @@ import '../shared/Layout.css'
 
 export function DoctorLayout() {
   return (
-    <div className="layout-root">
+    <div className="layout-root doctor-theme">
       <aside className="layout-sidebar">
         <div className="layout-brand">DentaStream Doctor</div>
         <nav className="layout-nav">

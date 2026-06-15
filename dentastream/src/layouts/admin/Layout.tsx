@@ -111,7 +111,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         <div className="flex h-full flex-col py-8 px-6">
           {/* Brand */}
           <div className="mb-8 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ffff56]">
               <svg viewBox="0 0 24 24" fill="white" className="h-5 w-5">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
               </svg>
@@ -140,7 +140,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
                       className={[
                         'flex items-center gap-3 rounded-lg px-3.5 py-3 text-sm font-medium transition-colors duration-150',
                         isActive
-                          ? 'bg-primary/10 text-primary'
+                          ? 'bg-[#ffff56]/25 text-[#7a7600]'
                           : 'text-dark-4 hover:bg-gray-2 hover:text-dark',
                       ].join(' ')}
                     >
@@ -156,7 +156,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
           {/* Footer */}
           <div className="mt-6 border-t border-stroke pt-4">
             <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ffff56]/25 text-sm font-bold text-[#7a7600]">
                 A
               </div>
               <div className="min-w-0">
@@ -198,17 +198,17 @@ function Header({ onMenuClick }: { onMenuClick: () => void }) {
           <input
             type="search"
             placeholder="Search..."
-            className="w-full rounded-full border border-stroke bg-gray-2 py-2.5 pl-11 pr-4 text-sm outline-none transition-colors focus:border-primary"
+            className="w-full rounded-full border border-stroke bg-gray-2 py-2.5 pl-11 pr-4 text-sm outline-none transition-colors focus:border-[#ffff56]"
           />
           <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-dark-5" />
         </div>
 
         <button className="relative rounded-full border border-stroke p-2 text-dark-4 hover:bg-gray-2" aria-label="Notifications">
           <BellIcon className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
+          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#ffff56]" />
         </button>
 
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ffff56] text-sm font-bold text-[#7a7600]">
           A
         </div>
       </div>

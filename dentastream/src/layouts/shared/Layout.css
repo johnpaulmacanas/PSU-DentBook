@@ -5,10 +5,22 @@ page-root {
 }
 
 .layout-root {
+  --role-accent: #22c55e;
+  --role-accent-text: #022c22;
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
   background: #f3f4f6;
+}
+
+.layout-root.patient-theme {
+  --role-accent: #75fbfd;
+  --role-accent-text: #035455;
+}
+
+.layout-root.doctor-theme {
+  --role-accent: #ff00ff;
+  --role-accent-text: #4b004b;
 }
 
 .layout-sidebar {
@@ -45,8 +57,8 @@ page-root {
 }
 
 .nav-link.active {
-  background: #22c55e;
-  color: #022c22;
+  background: var(--role-accent);
+  color: var(--role-accent-text);
 }
 
 .layout-main {
