@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ProfileService } from '../../services/ProfileService';
 import { DoctorService } from '../../services/DoctorService';
-import { Field, controlClass } from '../../components/ui/Field';
+import { controlClass } from '../../components/ui/Field';
 import type { Doctor, Profile } from '../../types';
 
 interface StaffRow {
