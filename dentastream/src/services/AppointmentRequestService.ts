@@ -189,4 +189,34 @@ export class AppointmentRequestService {
       return handleSupabaseError(err);
     }
   }
+
+  /** Patient cancels their own pending request. RLS ensures only pending + own. */
+  static async cancel(requestId: string): Promise<ServiceResult<boolean>> {
+    try {
+      const { error } = await supabase
+        .from('appointment_requests')
+        .update({ request_status: 'declined' })
+        .eq('id', requestId);
+
+      if (error) return { data: null, error: error.message };
+      return { data: true, error: null };
+    } catch (err) {
+      return handleSupabaseError(err);
+    }
+  }
+
+  /** All requests visible to the current user (RLS scopes by role). */
+  static async listAll(): Promise<ServiceResult<AppointmentRequest[]>> {
+    try {
+      const { data, error } = await supabase
+        .from('appointment_requests')
+        .select(AppointmentRequestService.BASE_SELECT)
+        .order('created_at', { ascending: false });
+
+      if (error) return { data: null, error: error.message };
+      return { data: data as unknown as AppointmentRequest[], error: null };
+    } catch (err) {
+      return handleSupabaseError(err);
+    }
+  }
 }

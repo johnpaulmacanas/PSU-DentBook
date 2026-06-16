@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePatients } from '../../hooks/usePatients';
 import { PatientService } from '../../services/PatientService';
+import { AppointmentService } from '../../services/AppointmentService';
+import { PrescriptionService } from '../../services/PrescriptionService';
+import { TreatmentResultService } from '../../services/TreatmentResultService';
 import { Field, controlClass } from '../../components/ui/Field';
-import type { Patient } from '../../types';
+import { formatDate } from '../../lib/format';
+import type { Patient, Prescription, TreatmentResult } from '../../types';
 
-/** Admin patient directory, wired to live data via PatientService. */
+/** Admin patient directory with clinical data editing and clinical history (prescriptions/results). */
 export function PatientsPage() {
   const { patients, loading, error, reload } = usePatients();
   const [search, setSearch] = useState('');
@@ -13,6 +17,11 @@ export function PatientsPage() {
   const [form, setForm] = useState({ age: '', gender: '', medical_notes: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Clinical history
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [patientRx, setPatientRx] = useState<Prescription[]>([]);
+  const [patientResults, setPatientResults] = useState<TreatmentResult[]>([]);
 
   // Sync the edit form whenever the selected patient changes.
   useEffect(() => {
@@ -23,6 +32,29 @@ export function PatientsPage() {
       gender: selected?.gender ?? '',
       medical_notes: selected?.medical_notes ?? '',
     });
+
+    // Load clinical history for selected patient
+    if (selected) {
+      (async () => {
+        setHistoryLoading(true);
+        setPatientRx([]); setPatientResults([]);
+        const appts = await AppointmentService.listForPatient(selected.id);
+        const appointments = appts.data ?? [];
+        const allRx: Prescription[] = [];
+        const allResults: TreatmentResult[] = [];
+        for (const a of appointments) {
+          const [rx, res] = await Promise.all([
+            PrescriptionService.listForAppointment(a.id),
+            TreatmentResultService.listForAppointment(a.id),
+          ]);
+          if (rx.data) allRx.push(...rx.data);
+          if (res.data) allResults.push(...res.data);
+        }
+        setPatientRx(allRx);
+        setPatientResults(allResults);
+        setHistoryLoading(false);
+      })();
+    }
   }, [selected]);
 
   async function savePatient() {
@@ -189,6 +221,56 @@ export function PatientsPage() {
                   </button>
                 </>
               )}
+
+              {/* Clinical History */}
+              <div className="mt-5 border-t border-stroke pt-4">
+                <h4 className="mb-3 text-xs font-semibold uppercase text-dark-5">Clinical History</h4>
+                {historyLoading ? (
+                  <p className="text-xs text-dark-5">Loading…</p>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Prescriptions */}
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-dark-4">Prescriptions ({patientRx.length})</p>
+                      {patientRx.length === 0 ? (
+                        <p className="text-xs text-dark-5">None.</p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {patientRx.slice(0, 5).map(rx => (
+                            <li key={rx.id} className="rounded border border-stroke bg-gray-1 px-3 py-2">
+                              <p className="text-xs font-medium text-dark">{rx.medication}</p>
+                              <p className="text-xs text-dark-5">
+                                {[rx.dosage, rx.frequency].filter(Boolean).join(' · ') || '—'}
+                                {' · '}{formatDate(rx.created_at)}
+                              </p>
+                            </li>
+                          ))}
+                          {patientRx.length > 5 && <p className="text-xs text-dark-5">+{patientRx.length - 5} more</p>}
+                        </ul>
+                      )}
+                    </div>
+                    {/* Treatment Results */}
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-dark-4">Treatment Results ({patientResults.length})</p>
+                      {patientResults.length === 0 ? (
+                        <p className="text-xs text-dark-5">None.</p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {patientResults.slice(0, 5).map(res => (
+                            <li key={res.id} className="rounded border border-stroke bg-gray-1 px-3 py-2">
+                              <p className="text-xs font-medium text-dark">{res.procedure_performed}</p>
+                              <p className="text-xs text-dark-5">
+                                {res.outcome ?? '—'} · {formatDate(res.created_at)}
+                              </p>
+                            </li>
+                          ))}
+                          {patientResults.length > 5 && <p className="text-xs text-dark-5">+{patientResults.length - 5} more</p>}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center px-5 py-16 text-center">

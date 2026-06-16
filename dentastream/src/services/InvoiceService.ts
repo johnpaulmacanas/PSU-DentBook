@@ -82,4 +82,21 @@ export class InvoiceService {
       return handleSupabaseError(err);
     }
   }
+
+  /** Adjust the amount on an unpaid invoice. */
+  static async updateAmount(id: string, amount: number): Promise<ServiceResult<Invoice>> {
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .update({ amount: Number.isFinite(amount) ? amount : 0 })
+        .eq('id', id)
+        .select(InvoiceService.BASE_SELECT)
+        .single();
+
+      if (error) return { data: null, error: error.message };
+      return { data: data as unknown as Invoice, error: null };
+    } catch (err) {
+      return handleSupabaseError(err);
+    }
+  }
 }

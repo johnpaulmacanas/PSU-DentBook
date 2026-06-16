@@ -50,6 +50,7 @@ export interface Appointment {
   status: AppointmentStatus;
   room: string | null;
   notes: string | null;
+  visit_notes: string | null;
   created_at: string;
   updated_at: string;
   patient?: Patient;
@@ -124,6 +125,37 @@ export interface MedicalCertificate {
   issued_by: string | null;
   issued_at: string;
   appointment?: Appointment;
+}
+
+export interface Prescription {
+  id: string;
+  appointment_id: string;
+  medication: string;
+  dosage: string | null;
+  frequency: string | null;
+  duration: string | null;
+  notes: string | null;
+  prescribed_by: string | null;
+  created_at: string;
+  appointment?: Appointment;
+}
+
+export interface TreatmentResult {
+  id: string;
+  appointment_id: string;
+  procedure_performed: string;
+  findings: string | null;
+  outcome: string | null;
+  notes: string | null;
+  recorded_by: string | null;
+  created_at: string;
+  appointment?: Appointment;
+}
+
+export interface ClinicSetting {
+  key: string;
+  value: string;
+  updated_at: string;
 }
 
 export interface ServiceResult<T> {

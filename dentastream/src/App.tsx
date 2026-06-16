@@ -12,7 +12,10 @@ import { DashboardPage } from './pages/admin/DashboardPage'
 import { AppointmentsPage } from './pages/admin/AppointmentsPage'
 import { RequestsPage } from './pages/admin/RequestsPage'
 import { PatientsPage } from './pages/admin/PatientsPage'
+import { StaffPage } from './pages/admin/StaffPage'
 import { ChatPage } from './pages/admin/ChatPage'
+import { ChannelsPage } from './pages/admin/ChannelsPage'
+import { BillingPage } from './pages/admin/BillingPage'
 import { SettingsPage } from './pages/shared/SettingsPage'
 
 // Pages — Patient
@@ -54,7 +57,10 @@ function AppRoutes() {
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/requests" element={<RequestsPage />} />
         <Route path="/patients" element={<PatientsPage />} />
+        <Route path="/billing" element={<BillingPage />} />
+        <Route path="/staff" element={<StaffPage />} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/channels" element={<ChannelsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 

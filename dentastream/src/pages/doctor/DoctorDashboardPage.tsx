@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DoctorService } from '../../services/DoctorService';
 import { AppointmentService } from '../../services/AppointmentService';
 import { AppointmentStatusBadge } from '../../components/ui/StatusBadge';
+import { Field, controlClass } from '../../components/ui/Field';
 import { formatTime } from '../../lib/format';
 import type { Appointment } from '../../types';
 
@@ -14,25 +15,42 @@ function isToday(iso: string): boolean {
     && d.getDate() === now.getDate();
 }
 
-/** Doctor home: today's cases and active patient count. */
+/** Doctor home: today's cases, stats, and quick-action buttons. */
 export function DoctorDashboardPage() {
   const { user, profile } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [, setDoctorId] = useState<string | null>(null);
+
+  // Visit notes modal
+  const [notesTarget, setNotesTarget] = useState<Appointment | null>(null);
+  const [visitNotes, setVisitNotes] = useState('');
+  const [notesBusy, setNotesBusy] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+
+  async function loadAll(cancelled: { current: boolean }) {
+    if (!user) return;
+    const doctor = await DoctorService.getByProfileId(user.id);
+    if (cancelled.current || !doctor.data) { setLoading(false); return; }
+    setDoctorId(doctor.data.id);
+    const appts = await AppointmentService.listForDoctor(doctor.data.id);
+    if (cancelled.current) return;
+    setAppointments(appts.data ?? []);
+    setLoading(false);
+  }
 
   useEffect(() => {
-    let cancelled = false;
-    if (!user) return;
-    (async () => {
-      const doctor = await DoctorService.getByProfileId(user.id);
-      if (cancelled || !doctor.data) { setLoading(false); return; }
-      const appts = await AppointmentService.listForDoctor(doctor.data.id);
-      if (cancelled) return;
-      setAppointments(appts.data ?? []);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
+    const cancelled = { current: false };
+    void loadAll(cancelled);
+    return () => { cancelled.current = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  async function reload() {
+    const cancelled = { current: false };
+    await loadAll(cancelled);
+  }
 
   const today = useMemo(
     () => appointments
@@ -40,6 +58,29 @@ export function DoctorDashboardPage() {
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()),
     [appointments],
   );
+
+  async function markCompleted(id: string) {
+    setBusyId(id);
+    await AppointmentService.updateStatus(id, 'completed');
+    setBusyId(null);
+    await reload();
+  }
+
+  function openNotes(a: Appointment) {
+    setNotesTarget(a);
+    setVisitNotes(a.visit_notes ?? '');
+    setNotesError(null);
+  }
+
+  async function saveNotes() {
+    if (!notesTarget) return;
+    setNotesBusy(true);
+    const { error } = await AppointmentService.update(notesTarget.id, { visit_notes: visitNotes });
+    setNotesBusy(false);
+    if (error) { setNotesError(error); return; }
+    setNotesTarget(null);
+    await reload();
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,6 +122,7 @@ export function DoctorDashboardPage() {
                   <th className="px-5 py-3 hidden lg:table-cell">Procedure</th>
                   <th className="px-5 py-3 hidden md:table-cell">Room</th>
                   <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stroke">
@@ -91,6 +133,27 @@ export function DoctorDashboardPage() {
                     <td className="px-5 py-3.5 text-dark-5 hidden lg:table-cell">{a.procedure}</td>
                     <td className="px-5 py-3.5 text-dark-5 hidden md:table-cell">{a.room ?? '—'}</td>
                     <td className="px-5 py-3.5"><AppointmentStatusBadge status={a.status} /></td>
+                    <td className="px-5 py-3.5 text-right">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => openNotes(a)}
+                          className="rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+                        >
+                          Notes
+                        </button>
+                        {(a.status === 'scheduled' || a.status === 'rescheduled') && (
+                          <button
+                            type="button"
+                            disabled={busyId === a.id}
+                            onClick={() => void markCompleted(a.id)}
+                            className="rounded-md px-2 py-1 text-xs font-medium text-green hover:bg-green-light/10 disabled:opacity-50"
+                          >
+                            Complete
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -98,6 +161,30 @@ export function DoctorDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Visit Notes Modal */}
+      {notesTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-stroke bg-white p-6 shadow-lg">
+            <h2 className="text-lg font-bold text-dark">Visit Notes</h2>
+            <p className="mt-1 text-sm text-dark-5">
+              {notesTarget.patient?.profile?.full_name ?? 'Patient'} · {notesTarget.procedure}
+            </p>
+            <div className="mt-4">
+              <Field label="Clinical notes">
+                <textarea className={controlClass} rows={5} value={visitNotes} onChange={e => setVisitNotes(e.target.value)} placeholder="Observations, treatment notes, follow-up plan…" />
+              </Field>
+            </div>
+            {notesError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{notesError}</p>}
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setNotesTarget(null)} className="rounded-lg border border-stroke px-4 py-2 text-sm font-medium text-dark hover:bg-gray-1">Cancel</button>
+              <button type="button" onClick={() => void saveNotes()} disabled={notesBusy} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
+                {notesBusy ? 'Saving…' : 'Save Notes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
