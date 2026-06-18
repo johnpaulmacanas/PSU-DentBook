@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase';
 import { handleSupabaseError } from '../lib/errors';
-import { InvoiceService } from './InvoiceService';
 import type { Receipt, ServiceResult } from '../types';
 
 export class ReceiptService {
@@ -15,30 +14,25 @@ export class ReceiptService {
     )
   `;
 
-  /** Generates a unique-ish receipt number. Not user-supplied, so no sanitize. */
-  private static nextReceiptNo(): string {
-    return `R-${Date.now().toString(36).toUpperCase()}`;
-  }
-
   /**
-   * Issue a receipt for an invoice and mark that invoice paid.
-   * Returns the created receipt.
+   * Issue a receipt for an invoice and mark that invoice paid in one
+   * atomic step via the pay_invoice RPC. The RPC is SECURITY DEFINER so
+   * patients can settle their own invoices without RLS on receipts/invoices
+   * needing to be loosened.
    */
   static async issue(invoiceId: string): Promise<ServiceResult<Receipt>> {
     try {
       const { data, error } = await supabase
-        .from('receipts')
-        .insert({ invoice_id: invoiceId, receipt_no: ReceiptService.nextReceiptNo() })
-        .select(ReceiptService.BASE_SELECT)
-        .single();
+        .rpc('pay_invoice', { p_invoice_id: invoiceId })
+        .single<{ receipt_id: string; receipt_no: string }>();
 
       if (error) return { data: null, error: error.message };
+      if (!data) return { data: null, error: 'Payment failed' };
 
-      // Settle the invoice now that a receipt exists. Non-fatal if it fails;
-      // the receipt is still valid, so we surface the receipt regardless.
-      await InvoiceService.markPaid(invoiceId);
-
-      return { data: data as unknown as Receipt, error: null };
+      return {
+        data: { id: data.receipt_id, receipt_no: data.receipt_no } as Receipt,
+        error: null,
+      };
     } catch (err) {
       return handleSupabaseError(err);
     }

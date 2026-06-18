@@ -120,7 +120,9 @@ export function DoctorAppointmentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stroke">
-                {appointments.map(a => (
+                {appointments.map(a => {
+                  const isUpcoming = new Date(a.scheduled_at).getTime() > Date.now();
+                  return (
                   <tr key={a.id} className="hover:bg-gray-1">
                     <td className="px-5 py-3.5 text-dark-5">{formatDate(a.scheduled_at)}</td>
                     <td className="px-5 py-3.5 font-medium text-dark">{formatTime(a.scheduled_at)}</td>
@@ -140,9 +142,10 @@ export function DoctorAppointmentsPage() {
                         {(a.status === 'scheduled' || a.status === 'rescheduled') && (
                           <button
                             type="button"
-                            disabled={busyId === a.id}
+                            disabled={busyId === a.id || isUpcoming}
+                            title={isUpcoming ? 'Available after the appointment time' : undefined}
                             onClick={() => void updateStatus(a.id, 'completed')}
-                            className="rounded-md px-2 py-1 text-xs font-medium text-green hover:bg-green-light/10 disabled:opacity-50"
+                            className="rounded-md px-2 py-1 text-xs font-medium text-green hover:bg-green-light/10 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Complete
                           </button>
@@ -160,7 +163,8 @@ export function DoctorAppointmentsPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
