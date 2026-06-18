@@ -1,27 +1,50 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePatients } from '../../hooks/usePatients';
+import { useAppointments } from '../../hooks/useAppointments';
 import { PatientService } from '../../services/PatientService';
 import { AppointmentService } from '../../services/AppointmentService';
 import { PrescriptionService } from '../../services/PrescriptionService';
 import { TreatmentResultService } from '../../services/TreatmentResultService';
 import { Field, controlClass } from '../../components/ui/Field';
 import { formatDate } from '../../lib/format';
+import { supabase } from '../../lib/supabase';
 import type { Patient, Prescription, TreatmentResult } from '../../types';
 
-/** Admin patient directory with clinical data editing and clinical history (prescriptions/results). */
+/** Admin patient directory with clinical data editing, clinical history, and walk-in registration. */
 export function PatientsPage() {
   const { patients, loading, error, reload } = usePatients();
+  const { appointments } = useAppointments();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Patient | null>(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ age: '', gender: '', medical_notes: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Clinical history
   const [historyLoading, setHistoryLoading] = useState(false);
   const [patientRx, setPatientRx] = useState<Prescription[]>([]);
   const [patientResults, setPatientResults] = useState<TreatmentResult[]>([]);
+
+  // Add patient modal
+  const [showAddPatient, setShowAddPatient] = useState(false);
+  const [addForm, setAddForm] = useState({ email: '', password: '', full_name: '', contact: '' });
+  const [addBusy, setAddBusy] = useState(false);
+
+  // Appointment counts and last visit per patient
+  const patientStats = useMemo(() => {
+    const stats: Record<string, { count: number; lastVisit: string | null }> = {};
+    for (const a of appointments) {
+      if (!stats[a.patient_id]) stats[a.patient_id] = { count: 0, lastVisit: null };
+      stats[a.patient_id].count++;
+      if (a.status === 'completed') {
+        const existing = stats[a.patient_id].lastVisit;
+        if (!existing || a.scheduled_at > existing) stats[a.patient_id].lastVisit = a.scheduled_at;
+      }
+    }
+    return stats;
+  }, [appointments]);
 
   // Sync the edit form whenever the selected patient changes.
   useEffect(() => {
@@ -39,10 +62,10 @@ export function PatientsPage() {
         setHistoryLoading(true);
         setPatientRx([]); setPatientResults([]);
         const appts = await AppointmentService.listForPatient(selected.id);
-        const appointments = appts.data ?? [];
+        const appointmentList = appts.data ?? [];
         const allRx: Prescription[] = [];
         const allResults: TreatmentResult[] = [];
-        for (const a of appointments) {
+        for (const a of appointmentList) {
           const [rx, res] = await Promise.all([
             PrescriptionService.listForAppointment(a.id),
             TreatmentResultService.listForAppointment(a.id),
@@ -73,6 +96,34 @@ export function PatientsPage() {
     await reload();
   }
 
+  async function addPatient() {
+    if (!addForm.email || !addForm.password || !addForm.full_name) {
+      setNotice('Please fill in all required fields.');
+      return;
+    }
+    setAddBusy(true);
+    setNotice(null);
+
+    const { data, error } = await supabase.functions.invoke('invite-staff', {
+      body: {
+        email: addForm.email,
+        password: addForm.password,
+        full_name: addForm.full_name,
+        role: 'patient',
+      },
+    });
+
+    setAddBusy(false);
+
+    if (error) { setNotice(`Error: ${error.message}`); return; }
+    if (data?.error) { setNotice(`Error: ${data.error}`); return; }
+
+    setNotice(`Patient account created for ${addForm.full_name}!`);
+    setShowAddPatient(false);
+    setAddForm({ email: '', password: '', full_name: '', contact: '' });
+    await reload();
+  }
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return patients;
@@ -89,7 +140,20 @@ export function PatientsPage() {
           <h1 className="text-2xl font-bold text-dark">Patients</h1>
           <p className="mt-1 text-sm text-dark-5">Search and manage patient records.</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowAddPatient(true)}
+          className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 transition-colors"
+        >
+          + Add Patient
+        </button>
       </div>
+
+      {notice && (
+        <p className={`rounded-lg px-3 py-2 text-sm ${notice.startsWith('Error') ? 'bg-red-50 text-red-600' : 'bg-green-light/20 text-green'}`}>
+          {notice}
+        </p>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-3">
         {/* List */}
@@ -116,35 +180,48 @@ export function PatientsPage() {
                     <th className="px-5 py-3">Patient</th>
                     <th className="px-5 py-3 hidden sm:table-cell">Code</th>
                     <th className="px-5 py-3 hidden md:table-cell">Contact</th>
+                    <th className="px-5 py-3 hidden lg:table-cell text-center">Appts</th>
+                    <th className="px-5 py-3 hidden lg:table-cell">Last Visit</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stroke">
-                  {filtered.map(p => (
-                    <tr
-                      key={p.id}
-                      onClick={() => setSelected(p)}
-                      className={[
-                        'cursor-pointer transition-colors hover:bg-gray-1',
-                        selected?.id === p.id ? 'bg-primary/5' : '',
-                      ].join(' ')}
-                    >
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                            {(p.profile?.full_name ?? '?')[0]?.toUpperCase()}
+                  {filtered.map(p => {
+                    const stats = patientStats[p.id];
+                    return (
+                      <tr
+                        key={p.id}
+                        onClick={() => setSelected(p)}
+                        className={[
+                          'cursor-pointer transition-colors hover:bg-gray-1',
+                          selected?.id === p.id ? 'bg-primary/5' : '',
+                        ].join(' ')}
+                      >
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                              {(p.profile?.full_name ?? '?')[0]?.toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium text-dark">{p.profile?.full_name ?? 'Unknown'}</p>
+                              <p className="text-xs text-dark-5">
+                                {p.age ? `${p.age}y` : '—'}{p.gender ? ` · ${p.gender}` : ''}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-dark">{p.profile?.full_name ?? 'Unknown'}</p>
-                            <p className="text-xs text-dark-5">
-                              {p.age ? `${p.age}y` : '—'}{p.gender ? ` · ${p.gender}` : ''}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 text-dark-5 hidden sm:table-cell">{p.patient_code}</td>
-                      <td className="px-5 py-3.5 text-dark-5 hidden md:table-cell">{p.profile?.contact ?? '—'}</td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-5 py-3.5 text-dark-5 hidden sm:table-cell">{p.patient_code}</td>
+                        <td className="px-5 py-3.5 text-dark-5 hidden md:table-cell">{p.profile?.contact ?? '—'}</td>
+                        <td className="px-5 py-3.5 text-center hidden lg:table-cell">
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                            {stats?.count ?? 0}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-dark-5 hidden lg:table-cell">
+                          {stats?.lastVisit ? formatDate(stats.lastVisit) : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               {filtered.length === 0 && (
@@ -207,6 +284,8 @@ export function PatientsPage() {
                       { label: 'Gender', value: selected.gender ?? '—' },
                       { label: 'Contact', value: selected.profile?.contact ?? '—' },
                       { label: 'Address', value: selected.profile?.address ?? '—' },
+                      { label: 'Appointments', value: String(patientStats[selected.id]?.count ?? 0) },
+                      { label: 'Last visit', value: patientStats[selected.id]?.lastVisit ? formatDate(patientStats[selected.id].lastVisit!) : '—' },
                       { label: 'Medical notes', value: selected.medical_notes ?? '—' },
                     ].map(({ label, value }) => (
                       <div key={label} className="flex items-start justify-between gap-4">
@@ -280,6 +359,52 @@ export function PatientsPage() {
           )}
         </div>
       </div>
+
+      {/* ===== Add Patient Modal ===== */}
+      {showAddPatient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-stroke bg-white p-6 shadow-lg">
+            <h2 className="text-lg font-bold text-dark">Add Patient</h2>
+            <p className="mt-1 text-sm text-dark-5">Register a walk-in patient. They can log in immediately.</p>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-dark-5">Full Name *</label>
+                <input className={controlClass} placeholder="Juan Dela Cruz"
+                  value={addForm.full_name}
+                  onChange={e => setAddForm(f => ({ ...f, full_name: e.target.value }))} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-dark-5">Email *</label>
+                <input type="email" className={controlClass} placeholder="patient@email.com"
+                  value={addForm.email}
+                  onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-dark-5">Temporary Password *</label>
+                <input type="text" className={controlClass} placeholder="Min 6 characters"
+                  value={addForm.password}
+                  onChange={e => setAddForm(f => ({ ...f, password: e.target.value }))} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-dark-5">Contact (optional)</label>
+                <input className={controlClass} placeholder="09xx-xxx-xxxx"
+                  value={addForm.contact}
+                  onChange={e => setAddForm(f => ({ ...f, contact: e.target.value }))} />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowAddPatient(false)}
+                className="rounded-lg border border-stroke px-4 py-2 text-sm font-medium text-dark hover:bg-gray-1">Cancel</button>
+              <button type="button" onClick={() => void addPatient()} disabled={addBusy}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
+                {addBusy ? 'Creating…' : 'Create Patient'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
