@@ -3,6 +3,7 @@ import { useInvoices } from '../../hooks/useInvoices';
 import { InvoiceService } from '../../services/InvoiceService';
 import { ReceiptService } from '../../services/ReceiptService';
 import { InvoiceStatusBadge, AppointmentStatusBadge } from '../../components/ui/StatusBadge';
+import { PrintableReceipt } from '../../components/billing/PrintableReceipt';
 import { formatMoney, formatDate } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
 import type { Invoice } from '../../types';
@@ -29,6 +30,9 @@ export function BillingPage() {
 
   // Payment gateway modal
   const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+
+  // Receipt preview
+  const [receiptInvoice, setReceiptInvoice] = useState<Invoice | null>(null);
 
   // Payment gateway info per invoice
   const [paymentGateways, setPaymentGateways] = useState<Record<string, string>>({});
@@ -275,16 +279,24 @@ export function BillingPage() {
                       </td>
                       <td className="px-5 py-3.5 text-dark-5 hidden lg:table-cell">{formatDate(inv.created_at)}</td>
                       <td className="px-5 py-3.5 text-right print:hidden">
-                        {isCancelled ? (
-                          <span className="text-xs text-dark-5">—</span>
-                        ) : inv.status === 'unpaid' ? (
-                          <button type="button" onClick={() => setPaymentInvoice(inv)} disabled={busyId === inv.id}
-                            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
-                            {busyId === inv.id ? 'Processing…' : 'Process Payment'}
-                          </button>
-                        ) : (
-                          <span className="text-xs text-dark-5">Paid</span>
-                        )}
+                        <div className="flex justify-end gap-1.5">
+                          {!isCancelled && (
+                            <button type="button" onClick={() => setReceiptInvoice(inv)}
+                              className="rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10">
+                              {inv.status === 'paid' ? '🧾 Receipt' : '🧾 Invoice'}
+                            </button>
+                          )}
+                          {isCancelled ? (
+                            <span className="text-xs text-dark-5">—</span>
+                          ) : inv.status === 'unpaid' ? (
+                            <button type="button" onClick={() => setPaymentInvoice(inv)} disabled={busyId === inv.id}
+                              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-60">
+                              {busyId === inv.id ? 'Processing…' : 'Process Payment'}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-dark-5">Paid</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -332,6 +344,16 @@ export function BillingPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ===== Receipt/Invoice Preview Modal ===== */}
+      {receiptInvoice && (
+        <PrintableReceipt
+          invoice={receiptInvoice}
+          receiptNo={receiptInvoice.status === 'paid' ? `RCT-${receiptInvoice.id.slice(0, 8).toUpperCase()}` : undefined}
+          paymentMethod={paymentGateways[receiptInvoice.id] || 'cash'}
+          onClose={() => setReceiptInvoice(null)}
+        />
       )}
     </div>
   );

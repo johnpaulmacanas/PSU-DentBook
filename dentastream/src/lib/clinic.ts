@@ -9,3 +9,6 @@ export const CLINIC = {
   phone: '(02) 8123-4567',
   hours: 'Mon–Sat, 8:00 AM – 6:00 PM',
 } as const;
+
+export const FB_PAGE_URL  = 'https://www.facebook.com/profile.php?id=61591029084416';
+export const MESSENGER_URL = 'https://m.me/61591029084416';

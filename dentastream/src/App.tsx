@@ -31,7 +31,6 @@ import { PatientChatPage } from './pages/patient/PatientChatPage'
 import { DoctorDashboardPage } from './pages/doctor/DoctorDashboardPage'
 import { DoctorAppointmentsPage } from './pages/doctor/DoctorAppointmentsPage'
 import { DoctorPatientsPage } from './pages/doctor/DoctorPatientsPage'
-import { DoctorChatPage } from './pages/doctor/DoctorChatPage'
 
 // Pages — Shared / auth
 import { LoginPage } from './pages/shared/LoginPage'
@@ -81,7 +80,6 @@ function AppRoutes() {
         <Route path="/doctor" element={<DoctorDashboardPage />} />
         <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
         <Route path="/doctor/patients" element={<DoctorPatientsPage />} />
-        <Route path="/doctor/chat" element={<DoctorChatPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to={roleHome} replace />} />

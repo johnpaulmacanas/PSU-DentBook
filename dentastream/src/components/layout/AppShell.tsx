@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { MenuIcon, BellIcon, LogoutIcon, ToothIcon } from './icons';
+import { MenuIcon, LogoutIcon, ToothIcon } from './icons';
 
 export interface NavItem {
   title: string;
@@ -151,14 +151,6 @@ export function AppShell({ navItems, accent, brand, roleLabel, userName, userIni
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="relative rounded-full border border-stroke p-2 text-dark-4 hover:bg-gray-2"
-              aria-label="Notifications"
-            >
-              <BellIcon className="h-5 w-5" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full" style={{ backgroundColor: accent.hex }} />
-            </button>
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold"
               style={{ backgroundColor: accent.hex, color: accent.text }}

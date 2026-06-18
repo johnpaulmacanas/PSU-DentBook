@@ -3,6 +3,7 @@ import { AppShell, ROLE_ACCENTS, type NavItem } from '../../components/layout/Ap
 import {
   DashboardIcon, CalendarIcon, PlusIcon, ReceiptIcon, UserIcon, ChatIcon,
 } from '../../components/layout/icons';
+import { MESSENGER_URL } from '../../lib/clinic';
 
 const NAV: NavItem[] = [
   { title: 'Home', to: '/patient', end: true, Icon: DashboardIcon },
@@ -12,8 +13,6 @@ const NAV: NavItem[] = [
   { title: 'Profile', to: '/patient/profile', Icon: UserIcon },
   { title: 'Messages', to: '/patient/chat', Icon: ChatIcon },
 ];
-
-const FB_PAGE_ID = import.meta.env.VITE_FB_PAGE_ID || 'DentaStreamClinic';
 
 export function PatientLayout() {
   const { profile } = useAuth();
@@ -30,7 +29,7 @@ export function PatientLayout() {
       />
       {/* Floating Messenger Button */}
       <a
-        href={`https://m.me/${FB_PAGE_ID}`}
+        href={MESSENGER_URL}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on Messenger"

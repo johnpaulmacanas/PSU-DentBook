@@ -1,5 +1,4 @@
-const FB_PAGE_ID = import.meta.env.VITE_FB_PAGE_ID || 'DentaStreamClinic';
-const MESSENGER_URL = `https://m.me/${FB_PAGE_ID}`;
+import { MESSENGER_URL, FB_PAGE_URL } from '../../lib/clinic';
 
 /**
  * Patient chat page — redirects to the clinic's Facebook Page Messenger.
@@ -48,12 +47,12 @@ export function PatientChatPage() {
           <p className="text-xs text-dark-5">
             You can also message us directly on Facebook at{' '}
             <a
-              href={`https://facebook.com/${FB_PAGE_ID}`}
+              href={FB_PAGE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-primary hover:underline"
             >
-              facebook.com/{FB_PAGE_ID}
+              facebook.com/DentaStream
             </a>
           </p>
         </div>
