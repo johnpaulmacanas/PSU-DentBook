@@ -32,7 +32,7 @@ export class PaymentService {
           amount,
           description: description ?? 'Dental Service',
           success_url: `${window.location.origin}/patient/billing?payment=success`,
-          cancel_url: `${window.location.origin}/patient/billing?payment=cancel`,
+          cancel_url: `${window.location.origin}/patient/billing?payment=cancelled`,
         },
       });
 
