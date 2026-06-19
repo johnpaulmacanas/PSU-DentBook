@@ -83,6 +83,34 @@ export class AuthService {
     await supabase.auth.signOut();
   }
 
+  /**
+   * Send a password-recovery email. The email link returns the user to
+   * /reset-password, where ResetPasswordPage handles the PASSWORD_RECOVERY
+   * session and lets them set a new password.
+   */
+  static async requestPasswordReset(email: string): Promise<ServiceResult<boolean>> {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(sanitizeEmail(email), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) return { data: null, error: error.message };
+      return { data: true, error: null };
+    } catch (err) {
+      return handleSupabaseError(err);
+    }
+  }
+
+  /** Set a new password for the currently authenticated user. */
+  static async updatePassword(newPassword: string): Promise<ServiceResult<boolean>> {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) return { data: null, error: error.message };
+      return { data: true, error: null };
+    } catch (err) {
+      return handleSupabaseError(err);
+    }
+  }
+
   static async getCurrentUser() {
     const { data } = await supabase.auth.getUser();
     return data.user;

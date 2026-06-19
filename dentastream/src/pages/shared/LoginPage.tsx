@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types';
 
@@ -12,6 +12,8 @@ function homeForRole(role: UserRole | null): string {
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const resetSuccess = searchParams.get('reset') === 'success';
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState<string | null>(null);
@@ -42,6 +44,12 @@ export function LoginPage() {
           <p className="mt-1 text-sm text-dark-5">Sign in to your clinic portal</p>
         </div>
 
+        {resetSuccess && (
+          <p className="mb-4 rounded-lg bg-green-light/20 px-3 py-2 text-xs text-green">
+            Password updated. Sign in with your new password.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-dark-5">Email</label>
@@ -57,7 +65,12 @@ export function LoginPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-dark-5">Password</label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="block text-xs font-medium text-dark-5">Password</label>
+              <Link to="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password"
               required

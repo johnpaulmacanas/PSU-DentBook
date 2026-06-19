@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePatients } from '../../hooks/usePatients';
 import { useAppointments } from '../../hooks/useAppointments';
 import { PatientService } from '../../services/PatientService';
+import { ProfileService } from '../../services/ProfileService';
 import { AppointmentService } from '../../services/AppointmentService';
 import { PrescriptionService } from '../../services/PrescriptionService';
 import { TreatmentResultService } from '../../services/TreatmentResultService';
@@ -17,7 +18,10 @@ export function PatientsPage() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Patient | null>(null);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ age: '', gender: '', medical_notes: '' });
+  const [form, setForm] = useState({
+    age: '', gender: '', medical_notes: '',
+    full_name: '', contact: '', address: '', birthdate: '', sex: '',
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -54,6 +58,11 @@ export function PatientsPage() {
       age: selected?.age != null ? String(selected.age) : '',
       gender: selected?.gender ?? '',
       medical_notes: selected?.medical_notes ?? '',
+      full_name: selected?.profile?.full_name ?? '',
+      contact:   selected?.profile?.contact ?? '',
+      address:   selected?.profile?.address ?? '',
+      birthdate: selected?.profile?.birthdate ?? '',
+      sex:       selected?.profile?.sex ?? '',
     });
 
     // Load clinical history for selected patient
@@ -84,6 +93,20 @@ export function PatientsPage() {
     if (!selected) return;
     setSaving(true);
     setSaveError(null);
+
+    const profileUpdate = await ProfileService.update(selected.profile_id, {
+      full_name: form.full_name || undefined,
+      contact:   form.contact   || undefined,
+      address:   form.address   || undefined,
+      birthdate: form.birthdate || undefined,
+      sex: (form.sex as 'M' | 'F' | 'other') || undefined,
+    });
+    if (profileUpdate.error) {
+      setSaving(false);
+      setSaveError(profileUpdate.error);
+      return;
+    }
+
     const { data, error } = await PatientService.update(selected.id, {
       age: form.age ? Number(form.age) : null,
       gender: (form.gender as 'M' | 'F' | 'other') || null,
@@ -91,7 +114,10 @@ export function PatientsPage() {
     });
     setSaving(false);
     if (error) { setSaveError(error); return; }
-    if (data) setSelected(data);
+    if (data) {
+      // Re-attach the freshly-updated profile so the detail pane reflects edits.
+      setSelected({ ...data, profile: profileUpdate.data ?? data.profile });
+    }
     setEditing(false);
     await reload();
   }
@@ -247,19 +273,51 @@ export function PatientsPage() {
 
               {editing ? (
                 <div className="mt-4 space-y-4">
-                  <Field label="Age">
-                    <input type="number" min="0" className={controlClass} value={form.age}
-                      onChange={e => setForm(f => ({ ...f, age: e.target.value }))} />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-dark-5">Identity &amp; Contact</p>
+                  <Field label="Full name">
+                    <input className={controlClass} value={form.full_name}
+                      onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} />
                   </Field>
-                  <Field label="Gender">
-                    <select className={controlClass} value={form.gender}
-                      onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}>
-                      <option value="">—</option>
-                      <option value="M">Male</option>
-                      <option value="F">Female</option>
-                      <option value="other">Other</option>
-                    </select>
+                  <Field label="Phone">
+                    <input className={controlClass} value={form.contact}
+                      onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} />
                   </Field>
+                  <Field label="Address">
+                    <input className={controlClass} value={form.address}
+                      onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Birthdate">
+                      <input type="date" className={controlClass} value={form.birthdate}
+                        onChange={e => setForm(f => ({ ...f, birthdate: e.target.value }))} />
+                    </Field>
+                    <Field label="Sex">
+                      <select className={controlClass} value={form.sex}
+                        onChange={e => setForm(f => ({ ...f, sex: e.target.value }))}>
+                        <option value="">—</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </Field>
+                  </div>
+
+                  <p className="pt-2 text-xs font-semibold uppercase tracking-wider text-dark-5">Clinical</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Age">
+                      <input type="number" min="0" className={controlClass} value={form.age}
+                        onChange={e => setForm(f => ({ ...f, age: e.target.value }))} />
+                    </Field>
+                    <Field label="Gender">
+                      <select className={controlClass} value={form.gender}
+                        onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}>
+                        <option value="">—</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </Field>
+                  </div>
                   <Field label="Medical notes">
                     <textarea rows={3} className={controlClass} value={form.medical_notes}
                       onChange={e => setForm(f => ({ ...f, medical_notes: e.target.value }))} />
@@ -296,7 +354,7 @@ export function PatientsPage() {
                   </dl>
                   <button type="button" onClick={() => setEditing(true)}
                     className="mt-5 w-full rounded-lg border border-stroke py-2 text-sm font-medium text-dark hover:bg-gray-1">
-                    Edit clinical data
+                    Edit patient info
                   </button>
                 </>
               )}

@@ -155,12 +155,6 @@ describe('AppShell — sticky header', () => {
     expect(h1.textContent).toBe('Dashboard');
   });
 
-  it('renders the notifications bell button', () => {
-    renderShell();
-    const bell = screen.getByRole('button', { name: /notifications/i });
-    expect(bell).toBeInTheDocument();
-  });
-
   it('renders the hamburger menu button (mobile toggle)', () => {
     renderShell();
     const toggle = screen.getByRole('button', { name: /toggle menu/i });

@@ -1,7 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import { AppShell, ROLE_ACCENTS, type NavItem } from '../../components/layout/AppShell';
 import {
-  DashboardIcon, CalendarIcon, InboxIcon, UsersIcon, UserIcon, ChatIcon, SettingsIcon, CurrencyIcon, ChartIcon,
+  DashboardIcon, CalendarIcon, InboxIcon, UsersIcon, UserIcon, SettingsIcon, CurrencyIcon, ChartIcon,
 } from '../../components/layout/icons';
 
 const NAV: NavItem[] = [
@@ -12,8 +12,6 @@ const NAV: NavItem[] = [
   { title: 'Billing', to: '/billing', Icon: CurrencyIcon },
   { title: 'Reports', to: '/reports', Icon: ChartIcon },
   { title: 'Staff', to: '/staff', Icon: UserIcon },
-  { title: 'Chat', to: '/chat', Icon: ChatIcon },
-  { title: 'Channels', to: '/channels', Icon: ChatIcon },
   { title: 'Settings', to: '/settings', Icon: SettingsIcon },
 ];
 

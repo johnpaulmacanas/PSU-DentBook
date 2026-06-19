@@ -13,8 +13,6 @@ import { AppointmentsPage } from './pages/admin/AppointmentsPage'
 import { RequestsPage } from './pages/admin/RequestsPage'
 import { PatientsPage } from './pages/admin/PatientsPage'
 import { StaffPage } from './pages/admin/StaffPage'
-import { ChatPage } from './pages/admin/ChatPage'
-import { ChannelsPage } from './pages/admin/ChannelsPage'
 import { BillingPage } from './pages/admin/BillingPage'
 import { ReportsPage } from './pages/admin/ReportsPage'
 import { SettingsPage } from './pages/shared/SettingsPage'
@@ -35,6 +33,8 @@ import { DoctorPatientsPage } from './pages/doctor/DoctorPatientsPage'
 // Pages — Shared / auth
 import { LoginPage } from './pages/shared/LoginPage'
 import { SignUpPage } from './pages/shared/SignUpPage'
+import { ForgotPasswordPage } from './pages/shared/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/shared/ResetPasswordPage'
 
 function AppRoutes() {
   const { role, loading } = useAuth()
@@ -50,6 +50,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Admin */}
       <Route element={<ProtectedRoute allowedRoles={['admin']}><Layout /></ProtectedRoute>}>
@@ -60,8 +62,6 @@ function AppRoutes() {
         <Route path="/billing" element={<BillingPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/staff" element={<StaffPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/channels" element={<ChannelsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 
