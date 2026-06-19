@@ -177,6 +177,33 @@ export class AppointmentService {
     }
   }
 
+  /** General-purpose patch: update editable fields on an appointment. */
+  static async update(
+    id: string,
+    fields: Partial<Pick<Appointment, 'doctor_id' | 'room' | 'notes' | 'visit_notes' | 'procedure'>>
+  ): Promise<ServiceResult<Appointment>> {
+    try {
+      const patch: Record<string, unknown> = {};
+      if (fields.doctor_id !== undefined) patch.doctor_id = fields.doctor_id;
+      if (fields.room !== undefined) patch.room = fields.room ? sanitize(fields.room) : null;
+      if (fields.notes !== undefined) patch.notes = fields.notes ? sanitize(fields.notes) : null;
+      if (fields.visit_notes !== undefined) patch.visit_notes = fields.visit_notes ? sanitize(fields.visit_notes) : null;
+      if (fields.procedure !== undefined) patch.procedure = sanitize(fields.procedure);
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .update(patch)
+        .eq('id', id)
+        .select(AppointmentService.BASE_SELECT)
+        .single();
+
+      if (error) return { data: null, error: error.message };
+      return { data: data as unknown as Appointment, error: null };
+    } catch (err) {
+      return handleSupabaseError(err);
+    }
+  }
+
   /** Convenience wrapper: mark as missed (no-show). */
   static markMissed(id: string): Promise<ServiceResult<Appointment>> {
     return AppointmentService.updateStatus(id, 'missed');

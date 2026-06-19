@@ -12,7 +12,9 @@ import { DashboardPage } from './pages/admin/DashboardPage'
 import { AppointmentsPage } from './pages/admin/AppointmentsPage'
 import { RequestsPage } from './pages/admin/RequestsPage'
 import { PatientsPage } from './pages/admin/PatientsPage'
-import { ChatPage } from './pages/admin/ChatPage'
+import { StaffPage } from './pages/admin/StaffPage'
+import { BillingPage } from './pages/admin/BillingPage'
+import { ReportsPage } from './pages/admin/ReportsPage'
 import { SettingsPage } from './pages/shared/SettingsPage'
 
 // Pages — Patient
@@ -27,11 +29,12 @@ import { PatientChatPage } from './pages/patient/PatientChatPage'
 import { DoctorDashboardPage } from './pages/doctor/DoctorDashboardPage'
 import { DoctorAppointmentsPage } from './pages/doctor/DoctorAppointmentsPage'
 import { DoctorPatientsPage } from './pages/doctor/DoctorPatientsPage'
-import { DoctorChatPage } from './pages/doctor/DoctorChatPage'
 
 // Pages — Shared / auth
 import { LoginPage } from './pages/shared/LoginPage'
 import { SignUpPage } from './pages/shared/SignUpPage'
+import { ForgotPasswordPage } from './pages/shared/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/shared/ResetPasswordPage'
 
 function AppRoutes() {
   const { role, loading } = useAuth()
@@ -47,6 +50,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Admin */}
       <Route element={<ProtectedRoute allowedRoles={['admin']}><Layout /></ProtectedRoute>}>
@@ -54,7 +59,9 @@ function AppRoutes() {
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/requests" element={<RequestsPage />} />
         <Route path="/patients" element={<PatientsPage />} />
-        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/billing" element={<BillingPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/staff" element={<StaffPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 
@@ -73,7 +80,6 @@ function AppRoutes() {
         <Route path="/doctor" element={<DoctorDashboardPage />} />
         <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
         <Route path="/doctor/patients" element={<DoctorPatientsPage />} />
-        <Route path="/doctor/chat" element={<DoctorChatPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to={roleHome} replace />} />

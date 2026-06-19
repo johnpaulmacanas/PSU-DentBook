@@ -1,10 +1,2 @@
-import { ChatRoom } from '../../components/chat/ChatRoom';
-
-export function ChatPage() {
-  return (
-    <ChatRoom
-      title="Real-Time Chat"
-      subtitle="Coordinate between dentists, staff, and patients."
-    />
-  );
-}
+// Removed: admin in-app chat. Delete this file (`git rm`) on next commit.
+export {};
