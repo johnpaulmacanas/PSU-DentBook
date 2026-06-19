@@ -31,6 +31,8 @@ export class PaymentService {
           invoice_id: invoiceId,
           amount,
           description: description ?? 'Dental Service',
+          success_url: `${window.location.origin}/patient/billing?payment=success`,
+          cancel_url: `${window.location.origin}/patient/billing?payment=cancelled`,
         },
       });
 
